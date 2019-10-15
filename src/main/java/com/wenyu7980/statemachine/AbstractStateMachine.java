@@ -57,12 +57,8 @@ public abstract class AbstractStateMachine<T, S, E extends Enum<E>, C> {
     /** 日志 */
     private static final Logger LOGGER = LoggerFactory
             .getLogger(AbstractStateMachine.class);
-    /**
-     * 状态机状态列表: <<当前状态，事件>,<列表<守卫，转换后状态>>>
-     *
-     */
+    /** 状态机状态列表: <<当前状态，事件>,<列表<守卫，转换后状态>>> */
     private Map<Node<S, E>, List<Node<StateMachineGuard<T, S, E>, S>>> states = new HashMap<>();
-
     /** 状态机监听（前） */
     private List<AbstractStateMachineListener<T, S, E>> preListeners = new ArrayList<>();
     /** 状态机监听（后） */
@@ -81,7 +77,6 @@ public abstract class AbstractStateMachine<T, S, E extends Enum<E>, C> {
     private Map<Node<S, S>, List<AbstractStateMachineTransformListener<T, S, E>>> transformListeners = new HashMap<>();
     /** 动作监听 */
     private List<AbstractStateMachineActionListener<T, S, E, C>> actions = new ArrayList<>();
-
     /** 异常处理 */
     private StatemachineExceptionSupplier<T, S, E, ?> supplier;
 
@@ -256,10 +251,22 @@ public abstract class AbstractStateMachine<T, S, E extends Enum<E>, C> {
         return this;
     }
 
+    /**
+     * 状态设置回调
+     * @param setState
+     */
     public void setSetState(BiConsumer<T, S> setState) {
         this.setState = setState;
     }
 
+    /**
+     * 状态切换
+     * @param t
+     * @param state
+     * @param event
+     * @param <X>
+     * @return
+     */
     public <X extends RuntimeException> S sendEvent(final T t, final S state,
             final E event) {
         return this.sendEvent(t, state, event, null);
