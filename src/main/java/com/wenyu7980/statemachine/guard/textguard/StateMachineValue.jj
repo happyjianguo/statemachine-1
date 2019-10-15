@@ -1,0 +1,374 @@
+/**
+ * JavaCC template file created by SF JavaCC plugin 1.5.28+ wizard for JavaCC 1.5.0+
+ */
+options
+{
+  STATIC = false;
+  UNICODE_INPUT = true;
+  // DEBUG_PARSER = true;
+}
+
+PARSER_BEGIN(StateMachineValuePaser)
+package com.wenyu7980.statemachine.guard.textguard;
+
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+
+public class StateMachineValuePaser
+{
+}
+
+PARSER_END(StateMachineValuePaser)
+
+SKIP :
+{
+  " "
+| "\r"
+| "\t"
+| "\n"
+}
+
+TOKEN : /* 数字（整数，小数） */
+{
+  < NUMBER :
+    (< DIGIT >)+
+  | (< DIGIT >)+ "." (< DIGIT >)+ >
+| < #DIGIT : [ "0"-"9" ] >
+}
+
+/* 字符串 */
+MORE :
+{
+  < "\"" > : IN_STRING
+}
+
+< IN_STRING >
+MORE :
+{
+  < (~[ "\"", "\\", "\r", "\n" ])+ >
+| < "\\" ([ "0"-"7" ])
+    {
+      3
+    }
+  >
+| < "\\" ~[ ] >
+}
+
+< IN_STRING >
+TOKEN :
+{
+  < STRING : "\"" > : DEFAULT
+}
+
+TOKEN : /* 标识符 */
+{
+  < IDENTIFIER :
+    "$"
+  | "#"
+  |
+    < LETTER >
+    (
+      < LETTER >
+    | < DIGIT >
+    )* >
+| < #LETTER : [ "a"-"z", "A"-"Z", "_" ] >
+}
+
+/** 最小的符号 */
+Object primary(Object data, Object value) :
+{
+  Object obj = null;
+  com.wenyu7980.statemachine.guard.textguard.Token t = null;
+}
+{
+  (
+    // 变量
+    obj = variable(data, value)
+    // 字符串
+  | t = < STRING >
+    {
+      String str = t.toString();
+      obj = str.substring(1, str.length() - 1);
+    }
+    // 数字字面常量
+  | t = < NUMBER >
+    {
+      obj = new BigDecimal(t.toString());
+    }
+  )
+  {
+    return obj;
+  }
+}
+
+/** 单元运算符 */
+Object unary(Object data, Object value) :
+{
+  Token t = null;
+  Object obj = null;
+}
+{
+  (
+    "!" obj = express(data, value)
+    {
+      obj = !((Boolean) obj);
+    }
+  | "-" obj = primary(data, value)
+    {
+      obj = ((BigDecimal) obj).multiply(new BigDecimal(- 1));
+    }
+  |
+    "(" obj = express(data, value) ")"
+  | obj = primary(data, value)
+  )
+  {
+    return obj;
+  }
+}
+
+/** 基础term */
+Object term(Object data, Object value) :
+{
+  Object obj = null;
+  Token t = null;
+}
+{
+  (
+    obj = unary(data, value)
+  )
+  {
+    return obj;
+  }
+}
+
+/** 乘除 */
+Object multiDiv(Object data, Object value) :
+{
+  Token t = null;
+  Object left = null;
+  Object right = null;
+}
+{
+  left = term(data, value)
+  (
+    "*" right = term(data, value)
+    {
+      left = ((BigDecimal) left).multiply((BigDecimal) right);
+    }
+  | "/" right = term(data, value)
+    {
+      left = ((BigDecimal) left).divide((BigDecimal) right);
+    }
+  )*
+  {
+    return left;
+  }
+}
+
+/** 加减 */
+Object plusMinus(Object data, Object value) :
+{
+  Token t = null;
+  Object left = null;
+  Object right = null;
+}
+{
+  left = multiDiv(data, value)
+  (
+    "+" right = multiDiv(data, value)
+    {
+      left = ((BigDecimal) left).add((BigDecimal) right);
+    }
+  | "-" right = multiDiv(data, value)
+    {
+      left = ((BigDecimal) left).subtract((BigDecimal) right);
+    }
+  )*
+  {
+    return left;
+  }
+}
+
+/** 比较运算 */
+Object compare(Object data, Object value) :
+{
+  Object left = null;
+  Object right = null;
+}
+{
+  left = plusMinus(data, value)
+  (
+    "<>" right = plusMinus(data, value)
+    {
+      if (left instanceof BigDecimal){
+          return ((Comparable) left).compareTo(right) != 0;
+      }
+      return !java.util.Objects.equals(left,right);
+    }
+  |
+    ">" right = plusMinus(data, value)
+    {
+      return ((Comparable) left).compareTo(right) > 0;
+    }
+  | "<" right = plusMinus(data, value)
+    {
+      return ((Comparable) left).compareTo(right) < 0;
+    }
+  | "==" right = plusMinus(data, value)
+    {
+      if (left instanceof BigDecimal){
+        return ((Comparable) left).compareTo(right) == 0;
+      }
+      return java.util.Objects.equals(left,right);
+    }
+  | ">=" right = plusMinus(data, value)
+    {
+      return ((Comparable) left).compareTo(right) >= 0;
+    }
+  | "<=" right = plusMinus(data, value)
+    {
+      return ((Comparable) left).compareTo(right) <= 0;
+    }
+  )*
+  {
+    return left;
+  }
+}
+
+/** AND */
+Object andExpr(Object data, Object value) :
+{
+  Object left = null;
+  Object right = null;
+}
+{
+  left = compare(data, value)
+  (
+    "&&" right = compare(data, value)
+    {
+      left = ((Boolean) left) && ((Boolean) right);
+    }
+  )*
+  {
+    return left;
+  }
+}
+
+/** OR */
+Object orExpr(Object data, Object value) :
+{
+  Object left = null;
+  Object right = null;
+}
+{
+  left = andExpr(data, value)
+  (
+    "||" right = andExpr(data, value)
+    {
+      left = ((Boolean) left) || ((Boolean) right);
+    }
+  )*
+  {
+    return left;
+  }
+}
+
+/** 表达式 */
+Object express(Object data, Object value) :
+{
+  Token t;
+  Object left = null;
+  Object mid = null;
+  Object right = null;
+}
+{
+  (
+    left = orExpr(data, value)
+    [
+      "?" mid = express(data, value) ":" right = express(data, value)
+      {
+        left = ((Boolean) left) ? mid : right;
+      }
+    ]
+  )
+  {
+    return left;
+  }
+}
+
+/** 属性变量 */
+Object variable(Object data, Object value) :
+{
+  Token t;
+  Field field = null;
+  Object obj = null;
+}
+{
+  (
+    t = < IDENTIFIER >
+    {
+      try
+      {
+        if ("#".equals(t.toString()))
+        {
+          obj = data;
+        }
+        else if ("$".equals(t.toString()))
+        {
+          obj = value;
+        }
+        else if("null".equals(t.toString()))
+        {
+          obj = null;
+        }
+        else
+        {
+          throw new TextGuardException(t.toString());
+        }
+      }
+      catch (Exception e)
+      {
+        e.printStackTrace();
+        throw new TextGuardException(data.getClass().toString());
+      }
+    }
+    (
+      "." t = < IDENTIFIER >
+      {
+        try
+        {
+          field = obj.getClass().getDeclaredField(t.toString());
+          field.setAccessible(true);
+          if (field.getType().isEnum())
+          {
+            obj = field.get(obj).toString();
+          }
+          else
+          {
+            obj = field.get(obj);
+          }
+        }
+        catch (Exception e)
+        {
+          e.printStackTrace();
+          throw new TextGuardException(data.getClass().toString());
+        }
+      }
+    )*
+  )
+  {
+    return obj;
+  }
+}
+
+/** 语句 */
+Object statement(Object data, Object value) :
+{
+  Object obj = null;
+}
+{
+  obj = express(data, value) ";"
+  {
+    return obj;
+  }
+}
