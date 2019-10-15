@@ -36,11 +36,11 @@ import java.util.stream.Collectors;
  * =============================================================================
  * preListener         -> listen before statemachine
  * exitStateListeners  -> listen exit state (离开状态)
- * preEventListeners   -> listen before event
+ * preEventListeners   -> listen before event (事件触发前)
  *                     -> S + E + if(guard成立) => S 获取新状态
  * setState            -> 设置新状态
- * transformListeners  -> transform listen
- * postEventListeners  -> listen after event
+ * transformListeners  -> transform listen （状态转换）
+ * postEventListeners  -> listen after event （时间触发后）
  * enterStateListeners -> listen enter state (进入状态)
  * actionListener      -> action listen
  * postListener        -> listen after statemachine
@@ -54,15 +54,6 @@ import java.util.stream.Collectors;
  * @param <C>
  */
 public abstract class AbstractStateMachine<T, S, E extends Enum<E>, C> {
-    /**
-     * 默认守卫
-     */
-    private final StateMachineGuard<T, S, E> DEFAULT_GUARD = new StateMachineGuard<T, S, E>() {
-        @Override
-        public boolean guard(T t, S s, E e, Object value) {
-            return true;
-        }
-    };
     /** 日志 */
     private static final Logger LOGGER = LoggerFactory
             .getLogger(AbstractStateMachine.class);
@@ -127,7 +118,7 @@ public abstract class AbstractStateMachine<T, S, E extends Enum<E>, C> {
      * @return
      */
     public AbstractStateMachine<T, S, E, C> addState(S from, E event, S to) {
-        addState(from, event, to, DEFAULT_GUARD);
+        addState(from, event, to, null);
         return this;
     }
 
@@ -314,7 +305,8 @@ public abstract class AbstractStateMachine<T, S, E extends Enum<E>, C> {
             throw this.supplier.get(t, state, event);
         }
         List<S> stats = this.states.get(pair).stream()
-                .filter(item -> item.getKey().guard(t, state, event, context))
+                .filter(item -> Objects.isNull(item.getKey()) || item.getKey()
+                        .guard(t, state, event, context))
                 .map(item -> item.getValue()).collect(Collectors.toList());
         if (stats.size() > 1 || stats.size() == 0) {
             throw this.supplier.get(t, state, event);
