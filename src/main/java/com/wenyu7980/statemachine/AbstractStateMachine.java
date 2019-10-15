@@ -112,7 +112,7 @@ public abstract class AbstractStateMachine<T, S, E extends Enum<E>, C> {
             StateMachineGuard<T, S, E> guard) {
         Node<S, E> key = new Node<>(from, event);
         if (!states.containsKey(key)) {
-            states.put(key, new LinkedList<>());
+            states.put(key, new ArrayList<>());
         }
         states.get(key).add(new Node<>(guard, to));
         return this;
@@ -163,13 +163,12 @@ public abstract class AbstractStateMachine<T, S, E extends Enum<E>, C> {
         if (listener.isPost()) {
             if (!this.postEventListeners.containsKey(listener.event())) {
                 this.postEventListeners
-                        .put(listener.event(), new LinkedList<>());
+                        .put(listener.event(), new ArrayList<>());
             }
             this.postEventListeners.get(listener.event()).add(listener);
         } else {
             if (!this.preEventListeners.containsKey(listener.event())) {
-                this.preEventListeners
-                        .put(listener.event(), new LinkedList<>());
+                this.preEventListeners.put(listener.event(), new ArrayList<>());
             }
             this.preEventListeners.get(listener.event()).add(listener);
         }
@@ -184,13 +183,13 @@ public abstract class AbstractStateMachine<T, S, E extends Enum<E>, C> {
         if (listener.isEnter()) {
             if (!this.enterStateListeners.containsKey(listener.state())) {
                 this.enterStateListeners
-                        .put(listener.state(), new LinkedList<>());
+                        .put(listener.state(), new ArrayList<>());
             }
             this.enterStateListeners.get(listener.state()).add(listener);
         } else {
             if (!this.exitStateListeners.containsKey(listener.state())) {
                 this.exitStateListeners
-                        .put(listener.state(), new LinkedList<>());
+                        .put(listener.state(), new ArrayList<>());
             }
             this.exitStateListeners.get(listener.state()).add(listener);
         }
@@ -204,7 +203,7 @@ public abstract class AbstractStateMachine<T, S, E extends Enum<E>, C> {
             AbstractStateMachineTransformListener<T, S, E> listener) {
         Node<S, S> pair = new Node<>(listener.source(), listener.target());
         if (!this.transformListeners.containsKey(pair)) {
-            this.transformListeners.put(pair, new LinkedList<>());
+            this.transformListeners.put(pair, new ArrayList<>());
         }
         this.transformListeners.get(pair).add(listener);
     }
