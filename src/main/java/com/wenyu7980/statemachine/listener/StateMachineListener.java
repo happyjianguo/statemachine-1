@@ -21,6 +21,8 @@ package com.wenyu7980.statemachine.listener;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+import com.wenyu7980.statemachine.StateMachine;
+
 /**
  * 状态机监听
  * 使用场景：
@@ -32,5 +34,6 @@ package com.wenyu7980.statemachine.listener;
  * @param <E> 事件
  */
 public interface StateMachineListener<T, S extends Enum<S>, E extends Enum<E>>
-        extends AbstractStateMachineListener<T, S, E> {
+        extends
+        AbstractStateMachineListener<T, StateMachine.StateSingle<S>, E> {
 }

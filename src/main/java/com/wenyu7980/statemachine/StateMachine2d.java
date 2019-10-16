@@ -37,7 +37,8 @@ public class StateMachine2d<T, S1 extends Enum<S1>, S2 extends Enum<S2>, E exten
         extends
         AbstractStateMachine<T, StateMachine2d.StatePair<S1, S2>, E, C> {
 
-    public static class StatePair<S1 extends Enum<S1>, S2 extends Enum<S2>> {
+    public static class StatePair<S1 extends Enum<S1>, S2 extends Enum<S2>>
+            implements StateContainer<StatePair<S1, S2>> {
         private S1 s1;
         private S2 s2;
 
@@ -70,6 +71,40 @@ public class StateMachine2d<T, S1 extends Enum<S1>, S2 extends Enum<S2>, E exten
         @Override
         public int hashCode() {
             return Objects.hash(s1, s2);
+        }
+
+        @Override
+        public boolean match(StatePair<S1, S2> pair) {
+            return (pair.s1 == null || this.s1 == null || Objects
+                    .equals(this.s1, pair.s1)) && (pair.s2 == null
+                    || this.s2 == null || Objects.equals(this.s2, pair.s2));
+        }
+
+        @Override
+        public boolean isNonNull() {
+            return this.s1 != null || this.s2 != null;
+        }
+
+        @Override
+        public boolean isSameFormat(StatePair<S1, S2> pair) {
+            if (this.s1 == null && pair.s1 != null) {
+                return false;
+            }
+            if (this.s1 != null && pair.s1 == null) {
+                return false;
+            }
+            if (this.s2 == null && pair.s2 != null) {
+                return false;
+            }
+            if (this.s2 != null && pair.s2 == null) {
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public boolean nonContainNull() {
+            return this.s1 != null && this.s2 != null;
         }
     }
 }

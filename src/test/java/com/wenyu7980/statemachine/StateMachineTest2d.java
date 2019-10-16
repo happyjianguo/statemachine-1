@@ -1,6 +1,5 @@
 package com.wenyu7980.statemachine;
 
-import com.wenyu7980.statemachine.listener.StateMachineListener2d;
 import com.wenyu7980.statemachine.exception.StatemachineExceptionSupplier;
 import com.wenyu7980.statemachine.guard.StateMachineTextGuard;
 import com.wenyu7980.statemachine.listener.*;
@@ -193,6 +192,13 @@ public class StateMachineTest2d {
         when(exitStateListener.state()).thenReturn(
                 new StateMachine2d.StatePair<>(State.S1, State2.S2));
         machine.addStateListener(exitStateListener);
+        // exitStateListener2
+        StateMachineStateListener2d<Data2, State, State2, Event> exitStateListener2 = Mockito
+                .mock(StateMachineStateListener2d.class);
+        when(exitStateListener2.isEnter()).thenReturn(false);
+        when(exitStateListener2.state())
+                .thenReturn(new StateMachine2d.StatePair<>(null, State2.S2));
+        machine.addStateListener(exitStateListener2);
         // transformListener
         StateMachineTransformListener2d<Data2, State, State2, Event> transformListener = Mockito
                 .mock(StateMachineTransformListener2d.class);
@@ -201,6 +207,14 @@ public class StateMachineTest2d {
         when(transformListener.target()).thenReturn(
                 new StateMachine2d.StatePair<>(State.S2, State2.S2));
         machine.addTransformListener(transformListener);
+        // transformListener2
+        StateMachineTransformListener2d<Data2, State, State2, Event> transformListener2 = Mockito
+                .mock(StateMachineTransformListener2d.class);
+        when(transformListener2.source())
+                .thenReturn(new StateMachine2d.StatePair<>(State.S1, null));
+        when(transformListener2.target())
+                .thenReturn(new StateMachine2d.StatePair<>(State.S2, null));
+        machine.addTransformListener(transformListener2);
         // actionListener
         StateMachineActionListener2d<Data2, State, State2, Event, Review> actionListener = Mockito
                 .mock(StateMachineActionListener2d.class);
@@ -212,6 +226,13 @@ public class StateMachineTest2d {
         when(enterStateListener.state()).thenReturn(
                 new StateMachine2d.StatePair<>(State.S2, State2.S2));
         machine.addStateListener(enterStateListener);
+        // enterStateListener2
+        StateMachineStateListener2d<Data2, State, State2, Event> enterStateListener2 = Mockito
+                .mock(StateMachineStateListener2d.class);
+        when(enterStateListener2.isEnter()).thenReturn(true);
+        when(enterStateListener2.state())
+                .thenReturn(new StateMachine2d.StatePair<>(State.S2, null));
+        machine.addStateListener(enterStateListener2);
         // preEventListener
         StateMachineEventListener2d<Data2, State, State2, Event, Review> postEventListener = Mockito
                 .mock(StateMachineEventListener2d.class);
@@ -237,8 +258,11 @@ public class StateMachineTest2d {
                 new StateMachine2d.StatePair<>(State.S1, State2.S2), null,
                 null);
         verify(exitStateListener).listener(Data2, Event.E1);
+        verify(exitStateListener2).listener(Data2, Event.E1);
         verify(transformListener).listener(Data2, Event.E1);
+        verify(transformListener2).listener(Data2, Event.E1);
         verify(enterStateListener).listener(Data2, Event.E1);
+        verify(enterStateListener2).listener(Data2, Event.E1);
         verify(postEventListener).listener(Data2,
                 new StateMachine2d.StatePair<>(State.S1, State2.S2),
                 new StateMachine2d.StatePair<>(State.S2, State2.S2), null);

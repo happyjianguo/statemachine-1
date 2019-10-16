@@ -143,6 +143,13 @@ public class StateMachineTest3d {
                 new StateMachine3d.StateTriple<>(State.S1, State2.S2,
                         State3.S3));
         machine.addStateListener(exitStateListener);
+        // exitStateListener2
+        StateMachineStateListener3d<Data2, State, State2, State3, Event> exitStateListener2 = Mockito
+                .mock(StateMachineStateListener3d.class);
+        when(exitStateListener2.isEnter()).thenReturn(false);
+        when(exitStateListener2.state()).thenReturn(
+                new StateMachine3d.StateTriple<>(null, State2.S2, State3.S3));
+        machine.addStateListener(exitStateListener2);
         // transformListener
         StateMachineTransformListener3d<Data2, State, State2, State3, Event> transformListener = Mockito
                 .mock(StateMachineTransformListener3d.class);
@@ -153,6 +160,14 @@ public class StateMachineTest3d {
                 new StateMachine3d.StateTriple<>(State.S2, State2.S2,
                         State3.S3));
         machine.addTransformListener(transformListener);
+        // transformListener2
+        StateMachineTransformListener3d<Data2, State, State2, State3, Event> transformListener2 = Mockito
+                .mock(StateMachineTransformListener3d.class);
+        when(transformListener2.source()).thenReturn(
+                new StateMachine3d.StateTriple<>(State.S1, null, State3.S3));
+        when(transformListener2.target()).thenReturn(
+                new StateMachine3d.StateTriple<>(State.S2, null, State3.S3));
+        machine.addTransformListener(transformListener2);
         // actionListener
         StateMachineActionListener3d<Data2, State, State2, State3, Event, Review> actionListener = Mockito
                 .mock(StateMachineActionListener3d.class);
@@ -165,6 +180,13 @@ public class StateMachineTest3d {
                 new StateMachine3d.StateTriple<>(State.S2, State2.S2,
                         State3.S3));
         machine.addStateListener(enterStateListener);
+        // enterStateListener2
+        StateMachineStateListener3d<Data2, State, State2, State3, Event> enterStateListener2 = Mockito
+                .mock(StateMachineStateListener3d.class);
+        when(enterStateListener2.isEnter()).thenReturn(true);
+        when(enterStateListener2.state()).thenReturn(
+                new StateMachine3d.StateTriple<>(State.S2, State2.S2, null));
+        machine.addStateListener(enterStateListener2);
         // preEventListener
         StateMachineEventListener3d<Data2, State, State2, State3, Event, Review> postEventListener = Mockito
                 .mock(StateMachineEventListener3d.class);
@@ -192,8 +214,11 @@ public class StateMachineTest3d {
                 new StateMachine3d.StateTriple<>(State.S1, State2.S2,
                         State3.S3), null, null);
         verify(exitStateListener).listener(Data2, Event.E1);
+        verify(exitStateListener2).listener(Data2, Event.E1);
         verify(transformListener).listener(Data2, Event.E1);
+        verify(transformListener2).listener(Data2, Event.E1);
         verify(enterStateListener).listener(Data2, Event.E1);
+        verify(enterStateListener2).listener(Data2, Event.E1);
         verify(postEventListener).listener(Data2,
                 new StateMachine3d.StateTriple<>(State.S1, State2.S2,
                         State3.S3),

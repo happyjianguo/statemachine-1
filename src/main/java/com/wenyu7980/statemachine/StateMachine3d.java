@@ -37,7 +37,8 @@ public class StateMachine3d<T, S1 extends Enum<S1>, S2 extends Enum<S2>, S3 exte
         extends
         AbstractStateMachine<T, StateMachine3d.StateTriple<S1, S2, S3>, E, C> {
 
-    public static class StateTriple<S1 extends Enum<S1>, S2 extends Enum<S2>, S3 extends Enum<S3>> {
+    public static class StateTriple<S1 extends Enum<S1>, S2 extends Enum<S2>, S3 extends Enum<S3>>
+            implements StateContainer<StateTriple<S1, S2, S3>> {
         private S1 s1;
         private S2 s2;
         private S3 s3;
@@ -76,6 +77,48 @@ public class StateMachine3d<T, S1 extends Enum<S1>, S2 extends Enum<S2>, S3 exte
         @Override
         public int hashCode() {
             return Objects.hash(s1, s2, s3);
+        }
+
+        @Override
+        public boolean match(StateTriple<S1, S2, S3> triple) {
+            return (triple.s1 == null || this.s1 == null || Objects
+                    .equals(this.s1, triple.s1)) && (triple.s2 == null
+                    || this.s2 == null || Objects.equals(this.s2, triple.s2))
+                    && (triple.s3 == null || this.s3 == null || Objects
+                    .equals(this.s3, triple.s3));
+        }
+
+        @Override
+        public boolean isNonNull() {
+            return this.s1 != null || this.s2 != null || this.s3 != null;
+        }
+
+        @Override
+        public boolean isSameFormat(StateTriple<S1, S2, S3> triple) {
+            if (this.s1 == null && triple.s1 != null) {
+                return false;
+            }
+            if (this.s1 != null && triple.s1 == null) {
+                return false;
+            }
+            if (this.s2 == null && triple.s2 != null) {
+                return false;
+            }
+            if (this.s2 != null && triple.s2 == null) {
+                return false;
+            }
+            if (this.s3 == null && triple.s3 != null) {
+                return false;
+            }
+            if (this.s3 != null && triple.s3 == null) {
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public boolean nonContainNull() {
+            return this.s1 != null && this.s2 != null && this.s3 != null;
         }
     }
 }

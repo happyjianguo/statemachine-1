@@ -53,7 +53,8 @@ import java.util.stream.Collectors;
  * @param <E>
  * @param <C>
  */
-public abstract class AbstractStateMachine<T, S, E extends Enum<E>, C> {
+public abstract class AbstractStateMachine<T, S extends StateContainer, E extends Enum<E>, C> {
+
     /** 日志 */
     private static final Logger LOGGER = LoggerFactory
             .getLogger(AbstractStateMachine.class);
@@ -70,11 +71,11 @@ public abstract class AbstractStateMachine<T, S, E extends Enum<E>, C> {
     /** 设置*/
     private BiConsumer<T, S> setState;
     /** 状态机状态监听列表（进入） */
-    private Map<S, List<AbstractStateMachineStateListener<T, S, E>>> enterStateListeners = new HashMap<>();
+    private List<AbstractStateMachineStateListener<T, S, E>> enterStateListeners = new ArrayList<>();
     /** 状态机状态监听列表（离开） */
-    private Map<S, List<AbstractStateMachineStateListener<T, S, E>>> exitStateListeners = new HashMap<>();
+    private List<AbstractStateMachineStateListener<T, S, E>> exitStateListeners = new ArrayList<>();
     /** 状态机转态迁移监听 */
-    private Map<Node<S, S>, List<AbstractStateMachineTransformListener<T, S, E>>> transformListeners = new HashMap<>();
+    private List<AbstractStateMachineTransformListener<T, S, E>> transformListeners = new ArrayList<>();
     /** 动作监听 */
     private List<AbstractStateMachineActionListener<T, S, E, C>> actions = new ArrayList<>();
     /** 异常处理 */
@@ -96,6 +97,7 @@ public abstract class AbstractStateMachine<T, S, E extends Enum<E>, C> {
      */
     public AbstractStateMachine<T, S, E, C> addState(S from, E event, S to,
             StateMachineGuard<T, S, E> guard) {
+        assert from.nonContainNull() && to.nonContainNull();
         Node<S, E> key = new Node<>(from, event);
         if (!states.containsKey(key)) {
             states.put(key, new ArrayList<>());
@@ -166,18 +168,11 @@ public abstract class AbstractStateMachine<T, S, E extends Enum<E>, C> {
      */
     public void addStateListener(
             AbstractStateMachineStateListener<T, S, E> listener) {
+        assert listener.state().isNonNull();
         if (listener.isEnter()) {
-            if (!this.enterStateListeners.containsKey(listener.state())) {
-                this.enterStateListeners
-                        .put(listener.state(), new ArrayList<>());
-            }
-            this.enterStateListeners.get(listener.state()).add(listener);
+            this.enterStateListeners.add(listener);
         } else {
-            if (!this.exitStateListeners.containsKey(listener.state())) {
-                this.exitStateListeners
-                        .put(listener.state(), new ArrayList<>());
-            }
-            this.exitStateListeners.get(listener.state()).add(listener);
+            this.exitStateListeners.add(listener);
         }
     }
 
@@ -187,11 +182,9 @@ public abstract class AbstractStateMachine<T, S, E extends Enum<E>, C> {
      */
     public void addTransformListener(
             AbstractStateMachineTransformListener<T, S, E> listener) {
-        Node<S, S> pair = new Node<>(listener.source(), listener.target());
-        if (!this.transformListeners.containsKey(pair)) {
-            this.transformListeners.put(pair, new ArrayList<>());
-        }
-        this.transformListeners.get(pair).add(listener);
+        assert listener.source().isNonNull() && listener.target().isNonNull()
+                && listener.source().isSameFormat(listener.target());
+        this.transformListeners.add(listener);
     }
 
     /**
@@ -294,12 +287,12 @@ public abstract class AbstractStateMachine<T, S, E extends Enum<E>, C> {
         });
         Node<S, E> pair = new Node<>(state, event);
         // 状态事件（离开）
-        if (this.exitStateListeners.containsKey(state)) {
-            this.exitStateListeners.get(state).forEach(action -> {
-                LOGGER.debug("状态事件（离开）:{}", action.getClass());
-                action.listener(t, event);
-            });
-        }
+        this.exitStateListeners.stream()
+                .filter(listener -> listener.state().match(state))
+                .forEach(listener -> {
+                    LOGGER.debug("状态事件（离开）:{}", listener.getClass());
+                    listener.listener(t, event);
+                });
         // 监听事件（前）
         if (this.preEventListeners.containsKey(event)) {
             this.preEventListeners.get(event).forEach(action -> {
@@ -318,19 +311,19 @@ public abstract class AbstractStateMachine<T, S, E extends Enum<E>, C> {
         if (stats.size() > 1 || stats.size() == 0) {
             throw this.supplier.get(t, state, event);
         }
-        S s = stats.get(0);
+        final S s = stats.get(0);
         if (setState != null) {
             setState.accept(t, s);
         }
         Node<S, S> states = new Node<>(state, s);
         LOGGER.debug("迁移后状态:{}", s);
         // 状态迁移
-        if (this.transformListeners.containsKey(states)) {
-            this.transformListeners.get(states).forEach(action -> {
-                LOGGER.debug("状态迁移:{}", action.getClass());
-                action.listener(t, event);
-            });
-        }
+        this.transformListeners.stream()
+                .filter(listener -> listener.source().match(state) && listener
+                        .target().match(s)).forEach(listener -> {
+            LOGGER.debug("状态迁移:{}", listener.getClass());
+            listener.listener(t, event);
+        });
         // 监听事件（后）
         if (this.postEventListeners.containsKey(event)) {
             this.postEventListeners.get(event).forEach(action -> {
@@ -339,12 +332,12 @@ public abstract class AbstractStateMachine<T, S, E extends Enum<E>, C> {
             });
         }
         // 状态事件（进入）
-        if (this.enterStateListeners.containsKey(s)) {
-            this.enterStateListeners.get(s).forEach(action -> {
-                LOGGER.debug("状态事件（进入）:{}", action.getClass());
-                action.listener(t, event);
-            });
-        }
+        this.enterStateListeners.stream()
+                .filter(listener -> listener.state().match(s))
+                .forEach(listener -> {
+                    LOGGER.debug("状态事件（进入）:{}", listener.getClass());
+                    listener.listener(t, event);
+                });
         // 动作监听
         this.actions.stream().forEach((action) -> {
             LOGGER.debug("动作监听:{}", action.getClass());

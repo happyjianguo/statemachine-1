@@ -16,7 +16,7 @@ import static org.mockito.Mockito.when;
 public class StateMachineTest {
 
     private StateMachine<Data, State, Event, Review> machine = new StateMachine<>();
-    private StatemachineExceptionSupplier<Data, State, Event, NoStateTransformException> supplier = (Data d, State s, Event e) -> new NoStateTransformException(
+    private StatemachineExceptionSupplier<Data, StateMachine.StateSingle<State>, Event, NoStateTransformException> supplier = (Data d, StateMachine.StateSingle<State> s, Event e) -> new NoStateTransformException(
             "没有状态转换{0},{1}", s.toString(), e.toString());
     private static final Review reviewPass = new Review(ReviewStatus.PASS);
     private static final Review reviewReject = new Review(ReviewStatus.REJECT);
@@ -25,34 +25,43 @@ public class StateMachineTest {
     public void Before() {
         machine.setSupplier(supplier);
         // S1--E1-->S2
-        machine.addState(State.S1, Event.E1, State.S2);
+        machine.addState(new StateMachine.StateSingle<>(State.S1), Event.E1,
+                new StateMachine.StateSingle<>(State.S2));
         // S2--E2+false-->S3
-        machine.addState(State.S2, Event.E2, State.S3,
+        machine.addState(new StateMachine.StateSingle<>(State.S2), Event.E2,
+                new StateMachine.StateSingle<>(State.S3),
                 (data, state, event, value) -> {
                     return false;
                 });
         // S2--E2+true-->S4
-        machine.addState(State.S2, Event.E2, State.S4,
+        machine.addState(new StateMachine.StateSingle<>(State.S2), Event.E2,
+                new StateMachine.StateSingle<>(State.S4),
                 (data, state, event, value) -> {
                     return true;
                 });
         // S4--E2+true-->S5
-        machine.addState(State.S4, Event.E3, State.S5,
+        machine.addState(new StateMachine.StateSingle<>(State.S4), Event.E3,
+                new StateMachine.StateSingle<>(State.S5),
                 new StateMachineTextGuard<>("1==1;"));
         // S5--E4+<>1-->S5
-        machine.addState(State.S5, Event.E4, State.S5,
+        machine.addState(new StateMachine.StateSingle<>(State.S5), Event.E4,
+                new StateMachine.StateSingle<>(State.S5),
                 new StateMachineTextGuard<>("#.inner.data<>1;"));
         // S5--E4+==1-->S6
-        machine.addState(State.S5, Event.E4, State.S6,
+        machine.addState(new StateMachine.StateSingle<>(State.S5), Event.E4,
+                new StateMachine.StateSingle<>(State.S6),
                 new StateMachineTextGuard<>("#.inner.data==1;"));
         // S6--E5+PASS-->S7
-        machine.addState(State.S6, Event.E5, State.S7,
+        machine.addState(new StateMachine.StateSingle<>(State.S6), Event.E5,
+                new StateMachine.StateSingle<>(State.S7),
                 new StateMachineTextGuard<>("$.status==\"PASS\";"));
         // S6--E5+<>PASS-->S8
-        machine.addState(State.S6, Event.E5, State.S8,
+        machine.addState(new StateMachine.StateSingle<>(State.S6), Event.E5,
+                new StateMachine.StateSingle<>(State.S8),
                 new StateMachineTextGuard<>("$.status<>\"PASS\";"));
         // S8--E6+true-->S9
-        machine.addState(State.S8, Event.E6, State.S9,
+        machine.addState(new StateMachine.StateSingle<>(State.S8), Event.E6,
+                new StateMachine.StateSingle<>(State.S9),
                 new StateMachineTextGuard<>(
                         "$.status==\"PASS\" || $.status==\"Other\" ;"));
     }
@@ -60,36 +69,53 @@ public class StateMachineTest {
     @Test
     public void test() {
         Data data = new Data();
-        Assert.assertEquals("S1--E1-->S2", State.S2,
-                machine.sendEvent(data, State.S1, Event.E1));
-        Assert.assertEquals("S2--E2-->S4", State.S4,
-                machine.sendEvent(data, State.S2, Event.E2));
+        Assert.assertEquals("S1--E1-->S2",
+                new StateMachine.StateSingle<>(State.S2),
+                machine.sendEvent(data,
+                        new StateMachine.StateSingle<>(State.S1), Event.E1));
+        Assert.assertEquals("S2--E2-->S4",
+                new StateMachine.StateSingle<>(State.S4),
+                machine.sendEvent(data,
+                        new StateMachine.StateSingle<>(State.S2), Event.E2));
     }
 
     @Test
     public void TestStateMachineTextGuard() {
         Data data = new Data(new Data.Inner(new BigDecimal(1)));
-        Assert.assertEquals("S4--E3-->S5", State.S5,
-                machine.sendEvent(data, State.S4, Event.E3));
-        Assert.assertEquals("S5--E4-->S6", State.S6,
-                machine.sendEvent(data, State.S5, Event.E4));
+        Assert.assertEquals("S4--E3-->S5",
+                new StateMachine.StateSingle<>(State.S5),
+                machine.sendEvent(data,
+                        new StateMachine.StateSingle<>(State.S4), Event.E3));
+        Assert.assertEquals("S5--E4-->S6",
+                new StateMachine.StateSingle<>(State.S6),
+                machine.sendEvent(data,
+                        new StateMachine.StateSingle<>(State.S5), Event.E4));
     }
 
     @Test
     public void TestStateMachineTextGuard$() {
         Data data = new Data(new Data.Inner(new BigDecimal(1)));
-        Assert.assertEquals("S6--E5+PASS-->S7", State.S7,
-                machine.sendEvent(data, State.S6, Event.E5, reviewPass));
-        Assert.assertEquals("S6--E5+<>PASS-->S8", State.S8,
-                machine.sendEvent(data, State.S6, Event.E5, reviewReject));
+        Assert.assertEquals("S6--E5+PASS-->S7",
+                new StateMachine.StateSingle<>(State.S7),
+                machine.sendEvent(data,
+                        new StateMachine.StateSingle<>(State.S6), Event.E5,
+                        reviewPass));
+        Assert.assertEquals("S6--E5+<>PASS-->S8",
+                new StateMachine.StateSingle<>(State.S8),
+                machine.sendEvent(data,
+                        new StateMachine.StateSingle<>(State.S6), Event.E5,
+                        reviewReject));
     }
 
     @Test
     public void TestStateMachineTextGuardLogic() {
         Data data = new Data(new Data.Inner(new BigDecimal(1)));
         // S8--E6+true-->S9
-        Assert.assertEquals("S8--E6+true-->S9", State.S9,
-                machine.sendEvent(data, State.S8, Event.E6, reviewPass));
+        Assert.assertEquals("S8--E6+true-->S9",
+                new StateMachine.StateSingle<>(State.S9),
+                machine.sendEvent(data,
+                        new StateMachine.StateSingle<>(State.S8), Event.E6,
+                        reviewPass));
     }
 
     /**
@@ -98,7 +124,8 @@ public class StateMachineTest {
     @Test(expected = NoStateTransformException.class)
     public void testNoStateTransformException() {
         Data data = new Data();
-        machine.sendEvent(data, State.S1, Event.E3);
+        machine.sendEvent(data, new StateMachine.StateSingle<>(State.S1),
+                Event.E3);
     }
 
     @Test
@@ -106,14 +133,20 @@ public class StateMachineTest {
         Data data = new Data();
         StateMachine<Data, State, Event, Review> machine = new StateMachine<>();
         machine.setSupplier(supplier);
-        machine.addState(State.S1, Event.E1, State.S2,
+        machine.addState(new StateMachine.StateSingle<>(State.S1), Event.E1,
+                new StateMachine.StateSingle<>(State.S2),
                 new StateMachineTextGuard<>("#.zero == 0.0;"));
-        machine.addState(State.S2, Event.E2, State.S3,
+        machine.addState(new StateMachine.StateSingle<>(State.S2), Event.E2,
+                new StateMachine.StateSingle<>(State.S3),
                 new StateMachineTextGuard<>("#.zero <> 1.0;"));
-        Assert.assertEquals("S1--E1+true-->S2", State.S2,
-                machine.sendEvent(data, State.S1, Event.E1));
-        Assert.assertEquals("S2--E2+true-->S3", State.S3,
-                machine.sendEvent(data, State.S2, Event.E2));
+        Assert.assertEquals("S1--E1+true-->S2",
+                new StateMachine.StateSingle<>(State.S2),
+                machine.sendEvent(data,
+                        new StateMachine.StateSingle<>(State.S1), Event.E1));
+        Assert.assertEquals("S2--E2+true-->S3",
+                new StateMachine.StateSingle<>(State.S3),
+                machine.sendEvent(data,
+                        new StateMachine.StateSingle<>(State.S2), Event.E2));
     }
 
     @Test
@@ -121,18 +154,27 @@ public class StateMachineTest {
         Data data = new Data();
         StateMachine<Data, State, Event, Review> machine = new StateMachine<>();
         machine.setSupplier(supplier);
-        machine.addState(State.S1, Event.E1, State.S2,
+        machine.addState(new StateMachine.StateSingle<>(State.S1), Event.E1,
+                new StateMachine.StateSingle<>(State.S2),
                 new StateMachineTextGuard<>("#.uBoolean;"));
-        machine.addState(State.S2, Event.E2, State.S3,
+        machine.addState(new StateMachine.StateSingle<>(State.S2), Event.E2,
+                new StateMachine.StateSingle<>(State.S3),
                 new StateMachineTextGuard<>("!#.lBoolean ;"));
-        machine.addState(State.S3, Event.E3, State.S4,
+        machine.addState(new StateMachine.StateSingle<>(State.S3), Event.E3,
+                new StateMachine.StateSingle<>(State.S4),
                 new StateMachineTextGuard<>("!(#.lBoolean && #.lBoolean);"));
-        Assert.assertEquals("S3--E3+!false-->S3", State.S4,
-                machine.sendEvent(data, State.S3, Event.E3));
-        Assert.assertEquals("S1--E1+true-->S2", State.S2,
-                machine.sendEvent(data, State.S1, Event.E1));
-        Assert.assertEquals("S2--E2+true-->S3", State.S3,
-                machine.sendEvent(data, State.S2, Event.E2));
+        Assert.assertEquals("S3--E3+!false-->S4",
+                new StateMachine.StateSingle<>(State.S4),
+                machine.sendEvent(data,
+                        new StateMachine.StateSingle<>(State.S3), Event.E3));
+        Assert.assertEquals("S1--E1+true-->S2",
+                new StateMachine.StateSingle<>(State.S2),
+                machine.sendEvent(data,
+                        new StateMachine.StateSingle<>(State.S1), Event.E1));
+        Assert.assertEquals("S2--E2+true-->S3",
+                new StateMachine.StateSingle<>(State.S3),
+                machine.sendEvent(data,
+                        new StateMachine.StateSingle<>(State.S2), Event.E2));
     }
 
     /**
@@ -144,8 +186,10 @@ public class StateMachineTest {
         Data data = new Data();
         StateMachine<Data, State, Event, Review> machine = new StateMachine<>();
         machine.setSupplier(supplier);
-        machine.addState(State.S1, Event.E1, State.S2);
-        machine.addState(State.S2, Event.E2, State.S3);
+        machine.addState(new StateMachine.StateSingle<>(State.S1), Event.E1,
+                new StateMachine.StateSingle<>(State.S2));
+        machine.addState(new StateMachine.StateSingle<>(State.S2), Event.E2,
+                new StateMachine.StateSingle<>(State.S3));
         // preListener
         StateMachineListener<Data, State, Event> preListener = Mockito
                 .mock(StateMachineListener.class);
@@ -161,13 +205,16 @@ public class StateMachineTest {
         StateMachineStateListener<Data, State, Event> exitStateListener = Mockito
                 .mock(StateMachineStateListener.class);
         when(exitStateListener.isEnter()).thenReturn(false);
-        when(exitStateListener.state()).thenReturn(State.S1);
+        when(exitStateListener.state())
+                .thenReturn(new StateMachine.StateSingle<>(State.S1));
         machine.addStateListener(exitStateListener);
         // transformListener
         StateMachineTransformListener<Data, State, Event> transformListener = Mockito
                 .mock(StateMachineTransformListener.class);
-        when(transformListener.source()).thenReturn(State.S1);
-        when(transformListener.target()).thenReturn(State.S2);
+        when(transformListener.source())
+                .thenReturn(new StateMachine.StateSingle<>(State.S1));
+        when(transformListener.target())
+                .thenReturn(new StateMachine.StateSingle<>(State.S2));
         machine.addTransformListener(transformListener);
         // actionListener
         StateMachineActionListener<Data, State, Event, Review> actionListener = Mockito
@@ -177,7 +224,8 @@ public class StateMachineTest {
         StateMachineStateListener<Data, State, Event> enterStateListener = Mockito
                 .mock(StateMachineStateListener.class);
         when(enterStateListener.isEnter()).thenReturn(true);
-        when(enterStateListener.state()).thenReturn(State.S2);
+        when(enterStateListener.state())
+                .thenReturn(new StateMachine.StateSingle<>(State.S2));
         machine.addStateListener(enterStateListener);
         // preEventListener
         StateMachineEventListener<Data, State, Event, Review> postEventListener = Mockito
@@ -192,17 +240,28 @@ public class StateMachineTest {
         machine.addListener(postListener);
 
         machine.setSetState(Data::setS);
-        machine.sendEvent(data, State.S1, Event.E1);
+        machine.sendEvent(data, new StateMachine.StateSingle<>(State.S1),
+                Event.E1);
         // 确认调用before
-        verify(preListener).listener(data, State.S1, Event.E1);
-        verify(preEventListener).listener(data, State.S1, null, null);
+        verify(preListener)
+                .listener(data, new StateMachine.StateSingle<>(State.S1),
+                        Event.E1);
+        verify(preEventListener)
+                .listener(data, new StateMachine.StateSingle<>(State.S1), null,
+                        null);
         verify(exitStateListener).listener(data, Event.E1);
         verify(transformListener).listener(data, Event.E1);
         verify(enterStateListener).listener(data, Event.E1);
-        verify(postEventListener).listener(data, State.S1, State.S2, null);
+        verify(postEventListener)
+                .listener(data, new StateMachine.StateSingle<>(State.S1),
+                        new StateMachine.StateSingle<>(State.S2), null);
         verify(actionListener)
-                .listener(data, State.S1, Event.E1, State.S2, null);
-        verify(postListener).listener(data, State.S2, Event.E1);
+                .listener(data, new StateMachine.StateSingle<>(State.S1),
+                        Event.E1, new StateMachine.StateSingle<>(State.S2),
+                        null);
+        verify(postListener)
+                .listener(data, new StateMachine.StateSingle<>(State.S2),
+                        Event.E1);
         Assert.assertEquals(State.S2, data.getS());
     }
 
