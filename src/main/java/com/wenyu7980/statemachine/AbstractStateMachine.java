@@ -93,6 +93,9 @@ public abstract class AbstractStateMachine<T, S extends StateContainer, E extend
     public AbstractStateMachine(Function<T, S> getState,
             BiConsumer<T, S> setState,
             StatemachineExceptionSupplier<T, S, E, ? extends RuntimeException> supplier) {
+        assert setState != null;
+        assert getState != null;
+        assert supplier != null;
         this.setState = setState;
         this.getState = getState;
         this.supplier = supplier;
@@ -303,9 +306,7 @@ public abstract class AbstractStateMachine<T, S extends StateContainer, E extend
             throw this.supplier.get(t, state, event);
         }
         final S s = stats.get(0);
-        if (setState != null) {
-            setState.accept(t, s);
-        }
+        setState.accept(t, s);
         Node<S, S> states = new Node<>(state, s);
         LOGGER.debug("迁移后状态:{}", s);
         // 状态迁移
