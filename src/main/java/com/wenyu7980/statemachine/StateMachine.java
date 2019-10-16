@@ -21,7 +21,11 @@ package com.wenyu7980.statemachine;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+import com.wenyu7980.statemachine.exception.StatemachineExceptionSupplier;
+
 import java.util.Objects;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * 状态机
@@ -34,6 +38,18 @@ import java.util.Objects;
  */
 public class StateMachine<T, S extends Enum<S>, E extends Enum<E>, C>
         extends AbstractStateMachine<T, StateMachine.StateSingle<S>, E, C> {
+
+    /**
+     * 构造函数
+     * @param getState
+     * @param setState
+     * @param supplier
+     */
+    public StateMachine(Function<T, StateSingle<S>> getState,
+            BiConsumer<T, StateSingle<S>> setState,
+            StatemachineExceptionSupplier<T, StateSingle<S>, E, ? extends RuntimeException> supplier) {
+        super(getState, setState, supplier);
+    }
 
     public static class StateSingle<S extends Enum<S>>
             implements StateContainer<StateSingle<S>> {

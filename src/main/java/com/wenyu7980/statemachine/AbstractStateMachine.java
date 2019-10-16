@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -70,6 +71,8 @@ public abstract class AbstractStateMachine<T, S extends StateContainer, E extend
     private Map<E, List<AbstractStateMachineEventListener<T, S, E, C>>> postEventListeners = new HashMap<>();
     /** 设置*/
     private BiConsumer<T, S> setState;
+    /** 获取状态 */
+    public Function<T, S> getState;
     /** 状态机状态监听列表（进入） */
     private List<AbstractStateMachineStateListener<T, S, E>> enterStateListeners = new ArrayList<>();
     /** 状态机状态监听列表（离开） */
@@ -79,10 +82,19 @@ public abstract class AbstractStateMachine<T, S extends StateContainer, E extend
     /** 动作监听 */
     private List<AbstractStateMachineActionListener<T, S, E, C>> actions = new ArrayList<>();
     /** 异常处理 */
-    private StatemachineExceptionSupplier<T, S, E, ?> supplier;
+    private StatemachineExceptionSupplier<T, S, E, ? extends RuntimeException> supplier;
 
-    public <X extends RuntimeException> void setSupplier(
-            StatemachineExceptionSupplier<T, S, E, X> supplier) {
+    /**
+     * 构造函数
+     * @param getState
+     * @param setState
+     * @param supplier
+     */
+    public AbstractStateMachine(Function<T, S> getState,
+            BiConsumer<T, S> setState,
+            StatemachineExceptionSupplier<T, S, E, ? extends RuntimeException> supplier) {
+        this.setState = setState;
+        this.getState = getState;
         this.supplier = supplier;
     }
 
@@ -245,27 +257,6 @@ public abstract class AbstractStateMachine<T, S extends StateContainer, E extend
     }
 
     /**
-     * 状态设置回调
-     * @param setState
-     */
-    public void setSetState(BiConsumer<T, S> setState) {
-        this.setState = setState;
-    }
-
-    /**
-     * 状态切换
-     * @param t
-     * @param state
-     * @param event
-     * @param <X>
-     * @return
-     */
-    public <X extends RuntimeException> S sendEvent(final T t, final S state,
-            final E event) {
-        return this.sendEvent(t, state, event, null);
-    }
-
-    /**
      *
      * 状态切换
      *
@@ -350,6 +341,19 @@ public abstract class AbstractStateMachine<T, S extends StateContainer, E extend
         });
         LOGGER.debug("状态机{}调用结束", this.getClass());
         return s;
+    }
+
+    public <X extends RuntimeException> S sendEvent(final T t, final S state,
+            final E event) {
+        return this.sendEvent(t, state, event, null);
+    }
+
+    public S sendEvent(T t, E event, C context) {
+        return this.sendEvent(t, getState.apply(t), event, context);
+    }
+
+    public S sendEvent(T t, E event) {
+        return this.sendEvent(t, event, null);
     }
 
     /**

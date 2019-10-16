@@ -20,8 +20,8 @@ public class Data {
         return s;
     }
 
-    public void setS(StateMachine.StateSingle<State> s) {
-        this.s = s.getS();
+    public void setS(State s) {
+        this.s = s;
     }
 
     public static class Inner {
