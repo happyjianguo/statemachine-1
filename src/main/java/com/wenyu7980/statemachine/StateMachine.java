@@ -71,5 +71,9 @@ public class StateMachine<T, S, E, C>
             return Objects.hash(s);
         }
 
+        @Override
+        public String toString() {
+            return "{" + "s=" + s + '}';
+        }
     }
 }

@@ -79,5 +79,10 @@ public class StateMachine2d<T, S1, S2, E, C> extends
             return MatchUtil.matchOrNull(pair.s1, this.s1) && MatchUtil
                     .matchOrNull(this.s2, pair.s2);
         }
+
+        @Override
+        public String toString() {
+            return "{" + "s1=" + s1 + ", s2=" + s2 + '}';
+        }
     }
 }

@@ -86,5 +86,11 @@ public class StateMachine3d<T, S1, S2, S3, E extends Enum<E>, C> extends
                     .matchOrNull(this.s2, triple.s2) && MatchUtil
                     .matchOrNull(this.s3, triple.s3);
         }
+
+        @Override
+        public String toString() {
+            return "{" + "s1=" + s1 + ", s2=" + s2 + ", s3=" + s3
+                    + '}';
+        }
     }
 }
