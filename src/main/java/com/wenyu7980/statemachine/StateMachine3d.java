@@ -38,7 +38,7 @@ import java.util.function.Function;
  * @param <S2>
  * @param <E>
  */
-public class StateMachine3d<T, S1, S2, S3, E extends Enum<E>, C> extends
+public class StateMachine3d<T, S1, S2, S3, E, C> extends
         AbstractStateMachine<T, StateMachine3d.StateTriple<S1, S2, S3>, E, C> {
 
     /**
