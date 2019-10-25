@@ -9,7 +9,7 @@ package com.wenyu7980.statemachine.guard;
  * @param <S>
  * @param <E>
  */
-public interface StateMachineGuard<T, S, E extends Enum<E>> {
+public interface StateMachineGuard<T, S, E> {
     /**
      * 守卫
      *

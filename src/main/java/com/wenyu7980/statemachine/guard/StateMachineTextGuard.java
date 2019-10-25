@@ -11,7 +11,7 @@ import com.wenyu7980.statemachine.guard.textguard.StateMachineValue;
  * @param <S>
  * @param <E>
  */
-public class StateMachineTextGuard<T, S, E extends Enum<E>>
+public class StateMachineTextGuard<T, S, E>
         implements StateMachineGuard<T, S, E> {
 
     /** 动态语言 */

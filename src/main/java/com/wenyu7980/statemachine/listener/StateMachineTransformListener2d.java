@@ -35,7 +35,6 @@ import com.wenyu7980.statemachine.StateMachine2d;
  * @param <S2>
  * @param <E>
  */
-public interface StateMachineTransformListener2d<T, S1 extends Enum<S1>, S2 extends Enum<S2>, E extends Enum<E>>
-        extends
+public interface StateMachineTransformListener2d<T, S1, S2, E> extends
         AbstractStateMachineTransformListener<T, StateMachine2d.StatePair<S1, S2>, E> {
 }

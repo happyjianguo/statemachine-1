@@ -32,7 +32,7 @@ package com.wenyu7980.statemachine.listener;
  * @param <S> 状态
  * @param <E> 事件
  */
-public interface AbstractStateMachineStateListener<T, S, E extends Enum<E>> {
+public interface AbstractStateMachineStateListener<T, S, E> {
     /**
      * 被监听的状态
      * @return

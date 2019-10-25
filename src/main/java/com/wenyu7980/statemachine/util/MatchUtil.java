@@ -1,5 +1,6 @@
-package com.wenyu7980.statemachine.listener;
+package com.wenyu7980.statemachine.util;
 
+import java.util.Objects;
 /**
  * Copyright 2019 WenYu
  *
@@ -22,26 +23,21 @@ package com.wenyu7980.statemachine.listener;
  */
 
 /**
- * 动作监听
- * 使用场景
- * 状态迁移之后，对所有的状态迁移都监听
- *
+ * Match 辅助类
  * @author wenyu
- * @date 2018年11月2日 下午6:24:44
- * @param <T>
- * @param <S>
- * @param <E>
  */
-@FunctionalInterface
-public interface AbstractStateMachineActionListener<T, S, E, C> {
+public final class MatchUtil {
+    private MatchUtil() {
+    }
 
     /**
-     * 状态机监听
-     * @param t
-     * @param from
-     * @param e
-     * @param to
-     * @param c
+     * 是否匹配
+     * @param t1
+     * @param t2
+     * @param <T>
+     * @return
      */
-    void listener(final T t, final S from, final E e, final S to, final C c);
+    public static <T> boolean matchOrNull(T t1, T t2) {
+        return t1 == null || t2 == null || Objects.equals(t1, t2);
+    }
 }

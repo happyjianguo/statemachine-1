@@ -35,7 +35,6 @@ import com.wenyu7980.statemachine.StateMachine;
  * @param <E>
  */
 @FunctionalInterface
-public interface StateMachineActionListener<T, S extends Enum<S>, E extends Enum<E>, C>
-        extends
+public interface StateMachineActionListener<T, S, E, C> extends
         AbstractStateMachineActionListener<T, StateMachine.StateSingle<S>, E, C> {
 }

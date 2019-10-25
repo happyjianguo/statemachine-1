@@ -34,7 +34,6 @@ import com.wenyu7980.statemachine.StateMachine;
  * @param <S>
  * @param <E>
  */
-public interface StateMachineTransformListener<T, S extends Enum<S>, E extends Enum<E>>
-        extends
+public interface StateMachineTransformListener<T, S, E> extends
         AbstractStateMachineTransformListener<T, StateMachine.StateSingle<S>, E> {
 }

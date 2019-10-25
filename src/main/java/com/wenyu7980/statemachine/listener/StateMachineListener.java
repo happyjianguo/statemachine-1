@@ -33,7 +33,6 @@ import com.wenyu7980.statemachine.StateMachine;
  * @param <S> 状态
  * @param <E> 事件
  */
-public interface StateMachineListener<T, S extends Enum<S>, E extends Enum<E>>
-        extends
+public interface StateMachineListener<T, S, E> extends
         AbstractStateMachineListener<T, StateMachine.StateSingle<S>, E> {
 }

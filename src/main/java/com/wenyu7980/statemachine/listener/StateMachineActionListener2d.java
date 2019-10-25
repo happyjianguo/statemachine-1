@@ -36,7 +36,6 @@ import com.wenyu7980.statemachine.StateMachine2d;
  * @param <E>
  */
 @FunctionalInterface
-public interface StateMachineActionListener2d<T, S1 extends Enum<S1>, S2 extends Enum<S2>, E extends Enum<E>, C>
-        extends
+public interface StateMachineActionListener2d<T, S1, S2, E, C> extends
         AbstractStateMachineActionListener<T, StateMachine2d.StatePair<S1, S2>, E, C> {
 }

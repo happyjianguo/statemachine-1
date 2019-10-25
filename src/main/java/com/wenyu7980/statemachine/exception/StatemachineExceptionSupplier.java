@@ -29,6 +29,6 @@ package com.wenyu7980.statemachine.exception;
  * @param <X>
  */
 @FunctionalInterface
-public interface StatemachineExceptionSupplier<T, S, E extends Enum<E>, X extends RuntimeException> {
+public interface StatemachineExceptionSupplier<T, S, E, X extends RuntimeException> {
     X get(T t, S state, E event);
 }

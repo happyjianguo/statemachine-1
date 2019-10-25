@@ -37,7 +37,6 @@ import com.wenyu7980.statemachine.StateMachine3d;
  * @param <E>
  */
 @FunctionalInterface
-public interface StateMachineActionListener3d<T, S1 extends Enum<S1>, S2 extends Enum<S2>, S3 extends Enum<S3>, E extends Enum<E>, C>
-        extends
+public interface StateMachineActionListener3d<T, S1, S2, S3, E, C> extends
         AbstractStateMachineActionListener<T, StateMachine3d.StateTriple<S1, S2, S3>, E, C> {
 }

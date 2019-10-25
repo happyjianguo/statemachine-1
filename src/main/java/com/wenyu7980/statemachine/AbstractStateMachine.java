@@ -53,13 +53,13 @@ import java.util.stream.Collectors;
  * @param <E>
  * @param <C>
  */
-public abstract class AbstractStateMachine<T, S extends StateContainer, E extends Enum<E>, C> {
+public abstract class AbstractStateMachine<T, S extends StateContainer, E, C> {
 
     /** 日志 */
     private static final Logger LOGGER = LoggerFactory
             .getLogger(AbstractStateMachine.class);
     /** 状态机状态列表: <<当前状态，事件>,<列表<守卫，转换后状态>>> */
-    private Map<Node<S, E>, List<Node<StateMachineGuard<T, S, E>, S>>> states = new HashMap<>();
+    private List<MachineContainer<T, S, E>> states = new ArrayList<>();
     /** 状态机监听（前） */
     private List<AbstractStateMachineListener<T, S, E>> preListeners = new ArrayList<>();
     /** 状态机监听（后） */
@@ -97,12 +97,7 @@ public abstract class AbstractStateMachine<T, S extends StateContainer, E extend
      */
     public AbstractStateMachine<T, S, E, C> addState(S from, E event, S to,
             StateMachineGuard<T, S, E> guard) {
-        assert from.nonContainNull() && to.nonContainNull();
-        Node<S, E> key = new Node<>(from, event);
-        if (!states.containsKey(key)) {
-            states.put(key, new ArrayList<>());
-        }
-        states.get(key).add(new Node<>(guard, to));
+        states.add(new MachineContainer<>(from, event, to, guard));
         return this;
     }
 
@@ -168,7 +163,6 @@ public abstract class AbstractStateMachine<T, S extends StateContainer, E extend
      */
     public void addStateListener(
             AbstractStateMachineStateListener<T, S, E> listener) {
-        assert listener.state().isNonNull();
         if (listener.isEnter()) {
             this.enterStateListeners.add(listener);
         } else {
@@ -182,8 +176,6 @@ public abstract class AbstractStateMachine<T, S extends StateContainer, E extend
      */
     public void addTransformListener(
             AbstractStateMachineTransformListener<T, S, E> listener) {
-        assert listener.source().isNonNull() && listener.target().isNonNull()
-                && listener.source().isSameFormat(listener.target());
         this.transformListeners.add(listener);
     }
 
@@ -285,7 +277,6 @@ public abstract class AbstractStateMachine<T, S extends StateContainer, E extend
             LOGGER.debug("监听状态机（前）:{}", listener.getClass());
             listener.listener(t, state, event);
         });
-        Node<S, E> pair = new Node<>(state, event);
         // 状态事件（离开）
         this.exitStateListeners.stream()
                 .filter(listener -> listener.state().match(state))
@@ -301,13 +292,9 @@ public abstract class AbstractStateMachine<T, S extends StateContainer, E extend
             });
         }
         // 转换
-        if (!this.states.containsKey(pair)) {
-            throw this.supplier.get(t, state, event);
-        }
-        List<S> stats = this.states.get(pair).stream()
-                .filter(item -> Objects.isNull(item.getKey()) || item.getKey()
-                        .guard(t, state, event, context))
-                .map(item -> item.getValue()).collect(Collectors.toList());
+        List<S> stats = this.states.stream()
+                .filter(container -> container.match(t, state, event, context))
+                .map(MachineContainer::getTo).collect(Collectors.toList());
         if (stats.size() > 1 || stats.size() == 0) {
             throw this.supplier.get(t, state, event);
         }
@@ -315,7 +302,6 @@ public abstract class AbstractStateMachine<T, S extends StateContainer, E extend
         if (setState != null) {
             setState.accept(t, s);
         }
-        Node<S, S> states = new Node<>(state, s);
         LOGGER.debug("迁移后状态:{}", s);
         // 状态迁移
         this.transformListeners.stream()
@@ -352,50 +338,28 @@ public abstract class AbstractStateMachine<T, S extends StateContainer, E extend
         return s;
     }
 
-    /**
-     * Basic hash bin node, used for most entries. (See below for TreeNode
-     * subclass, and in LinkedHashMap for its Entry subclass.)
-     */
-    protected static class Node<K, V> {
-        K key;
-        V value;
+    protected static class MachineContainer<T, S extends StateContainer, E> {
+        private S from;
+        private E event;
+        private StateMachineGuard<T, S, E> guard;
+        private S to;
 
-        public Node(K key, V value) {
-            this.key = key;
-            this.value = value;
+        public MachineContainer(S from, E event, S to,
+                StateMachineGuard<T, S, E> guard) {
+            this.from = from;
+            this.event = event;
+            this.to = to;
+            this.guard = guard;
         }
 
-        public final K getKey() {
-            return key;
+        public boolean match(T t, S from, E event, Object object) {
+            return this.from.match(from) && Objects.equals(this.event, event)
+                    && (this.guard == null || this.guard
+                    .guard(t, from, event, object));
         }
 
-        public final V getValue() {
-            return value;
-        }
-
-        @Override
-        public final String toString() {
-            return key + "=" + value;
-        }
-
-        @Override
-        public final int hashCode() {
-            return Objects.hashCode(key) ^ Objects.hashCode(value);
-        }
-
-        @Override
-        public final boolean equals(Object o) {
-            if (o == this) {
-                return true;
-            }
-            if (o instanceof Node) {
-                Node<?, ?> e = (Node<?, ?>) o;
-                if (Objects.equals(key, e.getKey()) && Objects
-                        .equals(value, e.getValue())) {
-                    return true;
-                }
-            }
-            return false;
+        public S getTo() {
+            return this.to;
         }
     }
 }

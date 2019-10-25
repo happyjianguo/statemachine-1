@@ -21,6 +21,8 @@ package com.wenyu7980.statemachine;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+import com.wenyu7980.statemachine.util.MatchUtil;
+
 import java.util.Objects;
 
 /**
@@ -32,10 +34,10 @@ import java.util.Objects;
  * @param <S>
  * @param <E>
  */
-public class StateMachine<T, S extends Enum<S>, E extends Enum<E>, C>
+public class StateMachine<T, S, E, C>
         extends AbstractStateMachine<T, StateMachine.StateSingle<S>, E, C> {
 
-    public static class StateSingle<S extends Enum<S>>
+    public static class StateSingle<S>
             implements StateContainer<StateSingle<S>> {
         private S s;
 
@@ -45,6 +47,11 @@ public class StateMachine<T, S extends Enum<S>, E extends Enum<E>, C>
 
         public S getS() {
             return s;
+        }
+
+        @Override
+        public boolean match(StateSingle<S> single) {
+            return MatchUtil.matchOrNull(this.s, single.s);
         }
 
         @Override
@@ -64,30 +71,5 @@ public class StateMachine<T, S extends Enum<S>, E extends Enum<E>, C>
             return Objects.hash(s);
         }
 
-        @Override
-        public boolean match(StateSingle<S> single) {
-            return Objects.equals(single.s, this.s);
-        }
-
-        @Override
-        public boolean isNonNull() {
-            return this.s != null;
-        }
-
-        @Override
-        public boolean isSameFormat(StateSingle<S> single) {
-            if (this.s == null && single.s != null) {
-                return false;
-            }
-            if (this.s != null && single.s == null) {
-                return false;
-            }
-            return true;
-        }
-
-        @Override
-        public boolean nonContainNull() {
-            return this.s != null;
-        }
     }
 }

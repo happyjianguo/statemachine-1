@@ -35,7 +35,6 @@ import com.wenyu7980.statemachine.StateMachine2d;
  * @param <E> 事件
  * @param <C> 上下文
  */
-public interface StateMachineEventListener2d<T, S1 extends Enum<S1>, S2 extends Enum<S2>, E extends Enum<E>, C>
-        extends
+public interface StateMachineEventListener2d<T, S1, S2, E, C> extends
         AbstractStateMachineEventListener<T, StateMachine2d.StatePair<S1, S2>, E, C> {
 }
