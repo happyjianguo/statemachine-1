@@ -21,9 +21,12 @@ package com.wenyu7980.statemachine;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+import com.wenyu7980.statemachine.exception.StatemachineExceptionSupplier;
 import com.wenyu7980.statemachine.util.MatchUtil;
 
 import java.util.Objects;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * 状态机
@@ -37,6 +40,18 @@ import java.util.Objects;
  */
 public class StateMachine3d<T, S1, S2, S3, E extends Enum<E>, C> extends
         AbstractStateMachine<T, StateMachine3d.StateTriple<S1, S2, S3>, E, C> {
+
+    /**
+     * 构造函数
+     * @param getState
+     * @param setState
+     * @param supplier
+     */
+    public StateMachine3d(Function<T, StateTriple<S1, S2, S3>> getState,
+            BiConsumer<T, StateTriple<S1, S2, S3>> setState,
+            StatemachineExceptionSupplier<T, StateTriple<S1, S2, S3>, E, ? extends RuntimeException> supplier) {
+        super(getState, setState, supplier);
+    }
 
     public static class StateTriple<S1, S2, S3>
             implements StateContainer<StateTriple<S1, S2, S3>> {
@@ -89,8 +104,7 @@ public class StateMachine3d<T, S1, S2, S3, E extends Enum<E>, C> extends
 
         @Override
         public String toString() {
-            return "{" + "s1=" + s1 + ", s2=" + s2 + ", s3=" + s3
-                    + '}';
+            return "{" + "s1=" + s1 + ", s2=" + s2 + ", s3=" + s3 + '}';
         }
     }
 }

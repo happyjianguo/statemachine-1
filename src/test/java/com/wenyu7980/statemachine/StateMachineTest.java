@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 
 public class StateMachineTest {
 
-    private StateMachine<Data, State, Event, Review> machine = new StateMachine<>();
+    private StateMachine<Data, State, Event, Review> machine;
     private StatemachineExceptionSupplier<Data, StateMachine.StateSingle<State>, Event, NoStateTransformException> supplier = (Data d, StateMachine.StateSingle<State> s, Event e) -> new NoStateTransformException(
             "没有状态转换{0},{1}", s.toString(), e.toString());
     private static final Review reviewPass = new Review(ReviewStatus.PASS);
@@ -23,7 +23,10 @@ public class StateMachineTest {
 
     @Before
     public void Before() {
-        machine.setSupplier(supplier);
+        this.machine = new StateMachine<>(
+                (t) -> new StateMachine.StateSingle<>(t.getS()), (t, s) -> {
+            t.setS(s.getS());
+        }, this.supplier);
         // S1--E1-->S2
         machine.addState(new StateMachine.StateSingle<>(State.S1), Event.E1,
                 new StateMachine.StateSingle<>(State.S2));
@@ -131,8 +134,10 @@ public class StateMachineTest {
     @Test
     public void testBigDecimalZero() {
         Data data = new Data();
-        StateMachine<Data, State, Event, Review> machine = new StateMachine<>();
-        machine.setSupplier(supplier);
+        StateMachine<Data, State, Event, Review> machine = new StateMachine<>(
+                (t) -> new StateMachine.StateSingle<>(t.getS()), (t, s) -> {
+            t.setS(s.getS());
+        }, this.supplier);
         machine.addState(new StateMachine.StateSingle<>(State.S1), Event.E1,
                 new StateMachine.StateSingle<>(State.S2),
                 new StateMachineTextGuard<>("#.zero == 0.0;"));
@@ -152,8 +157,10 @@ public class StateMachineTest {
     @Test
     public void testBoolean() {
         Data data = new Data();
-        StateMachine<Data, State, Event, Review> machine = new StateMachine<>();
-        machine.setSupplier(supplier);
+        StateMachine<Data, State, Event, Review> machine = new StateMachine<>(
+                (t) -> new StateMachine.StateSingle<>(t.getS()), (t, s) -> {
+            t.setS(s.getS());
+        }, this.supplier);
         machine.addState(new StateMachine.StateSingle<>(State.S1), Event.E1,
                 new StateMachine.StateSingle<>(State.S2),
                 new StateMachineTextGuard<>("#.uBoolean;"));
@@ -184,8 +191,10 @@ public class StateMachineTest {
     @Test
     public void testListener() {
         Data data = new Data();
-        StateMachine<Data, State, Event, Review> machine = new StateMachine<>();
-        machine.setSupplier(supplier);
+        StateMachine<Data, State, Event, Review> machine = new StateMachine<>(
+                (t) -> new StateMachine.StateSingle<>(t.getS()), (t, s) -> {
+            t.setS(s.getS());
+        }, this.supplier);
         machine.addState(new StateMachine.StateSingle<>(State.S1), Event.E1,
                 new StateMachine.StateSingle<>(State.S2));
         machine.addState(new StateMachine.StateSingle<>(State.S2), Event.E2,
@@ -238,8 +247,6 @@ public class StateMachineTest {
                 .mock(StateMachineListener.class);
         when(postListener.isPost()).thenReturn(true);
         machine.addListener(postListener);
-
-        machine.setSetState(Data::setS);
         machine.sendEvent(data, new StateMachine.StateSingle<>(State.S1),
                 Event.E1);
         // 确认调用before

@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 
 public class StateMachineTest2d {
 
-    private StateMachine2d<Data2, State, State2, Event, Review> machine = new StateMachine2d<>();
+    private StateMachine2d<Data2, State, State2, Event, Review> machine;
     private StatemachineExceptionSupplier<Data2, StateMachine2d.StatePair<State, State2>, Event, NoStateTransformException> supplier = (Data2 d, StateMachine2d.StatePair<State, State2> s, Event e) -> new NoStateTransformException(
             "没有状态转换{0},{1},{2}", s.getS1().toString(), s.getS2().toString(),
             e.toString());
@@ -24,7 +24,12 @@ public class StateMachineTest2d {
 
     @Before
     public void Before() {
-        machine.setSupplier(supplier);
+        machine = new StateMachine2d<>(
+                (t) -> new StateMachine2d.StatePair<>(t.getS(), t.getS2()),
+                (t, s) -> {
+                    t.setS(s.getS1());
+                    t.setS2(s.getS2());
+                }, this.supplier);
         // S1--E1-->S2
         machine.addState(new StateMachine2d.StatePair<>(State.S1, State2.S1),
                 Event.E1, new StateMachine2d.StatePair<>(State.S2, State2.S2));
@@ -110,8 +115,12 @@ public class StateMachineTest2d {
     @Test
     public void testBigDecimalZero() {
         Data2 Data2 = new Data2();
-        StateMachine2d<Data2, State, State2, Event, Review> machine = new StateMachine2d<>();
-        machine.setSupplier(supplier);
+        StateMachine2d<Data2, State, State2, Event, Review> machine = new StateMachine2d<>(
+                (t) -> new StateMachine2d.StatePair<>(t.getS(), t.getS2()),
+                (t, s) -> {
+                    t.setS(s.getS1());
+                    t.setS2(s.getS2());
+                }, this.supplier);
         machine.addState(new StateMachine2d.StatePair<>(State.S1, State2.S1),
                 Event.E1, new StateMachine2d.StatePair<>(State.S2, State2.S1),
                 new StateMachineTextGuard<>("#.zero == 0.0;"));
@@ -133,8 +142,12 @@ public class StateMachineTest2d {
     @Test
     public void testBoolean() {
         Data2 Data2 = new Data2();
-        StateMachine2d<Data2, State, State2, Event, Review> machine = new StateMachine2d<>();
-        machine.setSupplier(supplier);
+        StateMachine2d<Data2, State, State2, Event, Review> machine = new StateMachine2d<>(
+                (t) -> new StateMachine2d.StatePair<>(t.getS(), t.getS2()),
+                (t, s) -> {
+                    t.setS(s.getS1());
+                    t.setS2(s.getS2());
+                }, this.supplier);
         machine.addState(new StateMachine2d.StatePair<>(State.S1, State2.S1),
                 Event.E1, new StateMachine2d.StatePair<>(State.S2, State2.S1),
                 new StateMachineTextGuard<>("#.uBoolean;"));
@@ -168,8 +181,12 @@ public class StateMachineTest2d {
     @Test
     public void testListener() {
         Data2 Data2 = new Data2();
-        StateMachine2d<Data2, State, State2, Event, Review> machine = new StateMachine2d<>();
-        machine.setSupplier(supplier);
+        StateMachine2d<Data2, State, State2, Event, Review> machine = new StateMachine2d<>(
+                (t) -> new StateMachine2d.StatePair<>(t.getS(), t.getS2()),
+                (t, s) -> {
+                    t.setS(s.getS1());
+                    t.setS2(s.getS2());
+                }, this.supplier);
         machine.addState(new StateMachine2d.StatePair<>(State.S1, State2.S2),
                 Event.E1, new StateMachine2d.StatePair<>(State.S2, State2.S2));
         machine.addState(new StateMachine2d.StatePair<>(State.S2, State2.S2),
@@ -244,11 +261,6 @@ public class StateMachineTest2d {
                 .mock(StateMachineListener2d.class);
         when(postListener.isPost()).thenReturn(true);
         machine.addListener(postListener);
-
-        machine.setSetState((t, s) -> {
-            t.setS(s.getS1());
-            t.setS2(s.getS2());
-        });
         machine.sendEvent(Data2,
                 new StateMachine2d.StatePair<>(State.S1, State2.S2), Event.E1);
         // 确认调用before
