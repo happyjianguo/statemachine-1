@@ -1,4 +1,19 @@
 package com.wenyu7980.statemachine;
+/**
+ * Copyright wenyu
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import com.wenyu7980.statemachine.exception.StatemachineExceptionSupplier;
 import com.wenyu7980.statemachine.guard.StateMachineGuard;
@@ -6,45 +21,27 @@ import com.wenyu7980.statemachine.listener.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Copyright 2019 WenYu
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of
- * this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
- * the Software, and to permit persons to whom the Software is furnished to do so,
- * subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included
- * in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
-/**
  * 状态机
  * =============================================================================
- * preListener         -> listen before statemachine
- * exitStateListeners  -> listen exit state (离开状态)
- * preEventListeners   -> listen before event (事件触发前)
- *                     -> S + E + if(guard成立) => S 获取新状态
- * setState            -> 设置新状态
- * transformListeners  -> transform listen （状态转换）
- * postEventListeners  -> listen after event （时间触发后）
- * enterStateListeners -> listen enter state (进入状态)
- * actionListener      -> action listen
- * postListener        -> listen after statemachine
+ * listen before statemachine（状态机前）
+ * listen exit state (离开状态)
+ * listen before event (事件触发前)
+ * S + E + if（guard） => S 获取新状态
+ * setState => 设置新状态
+ * listen transform（状态迁移）
+ * listen action （动作监听）
+ * listen after event （事件触发后）
+ * listen enter state （进入状态）
+ * listen after statemachine （状态机后）
  * =============================================================================
  *
  * @author wenyu
@@ -59,24 +56,18 @@ public abstract class AbstractStateMachine<T, S extends StateContainer, E, C> {
     /** 日志 */
     private static final Logger LOGGER = LoggerFactory
             .getLogger(AbstractStateMachine.class);
-    /** 状态机状态列表: <<当前状态，事件>,<列表<守卫，转换后状态>>> */
-    private List<MachineContainer<T, S, E>> states = new ArrayList<>();
-    /** 状态机监听（前） */
-    private List<AbstractStateMachineListener<T, S, E>> preListeners = new ArrayList<>();
-    /** 状态机监听（后） */
-    private List<AbstractStateMachineListener<T, S, E>> postListeners = new ArrayList<>();
-    /** 状态机事件监听列表（前） */
-    private Map<E, List<AbstractStateMachineEventListener<T, S, E, C>>> preEventListeners = new HashMap<>();
-    /** 状态机事件监听列表（后） */
-    private Map<E, List<AbstractStateMachineEventListener<T, S, E, C>>> postEventListeners = new HashMap<>();
-    /** 设置*/
-    private BiConsumer<T, S> setState;
     /** 获取状态 */
     public Function<T, S> getState;
-    /** 状态机状态监听列表（进入） */
-    private List<AbstractStateMachineStateListener<T, S, E>> enterStateListeners = new ArrayList<>();
-    /** 状态机状态监听列表（离开） */
-    private List<AbstractStateMachineStateListener<T, S, E>> exitStateListeners = new ArrayList<>();
+    /** 设置*/
+    private BiConsumer<T, S> setState;
+    /** 状态机状态列表*/
+    private List<MachineContainer<T, S, E>> states = new ArrayList<>();
+    /** 状态机监听 */
+    private List<AbstractStateMachineListener<T, S, E>> listeners = new ArrayList<>();
+    /** 状态机事件监听列表 */
+    private List<AbstractStateMachineEventListener<T, S, E, C>> eventListeners = new ArrayList<>();
+    /** 状态机状态监听列表 */
+    private List<AbstractStateMachineStateListener<T, S, E>> stateListeners = new ArrayList<>();
     /** 状态机转态迁移监听 */
     private List<AbstractStateMachineTransformListener<T, S, E>> transformListeners = new ArrayList<>();
     /** 动作监听 */
@@ -133,56 +124,62 @@ public abstract class AbstractStateMachine<T, S extends StateContainer, E, C> {
      * 状态机监听
      * @param listener
      */
-    public void addListener(AbstractStateMachineListener<T, S, E> listener) {
-        if (listener.isPost()) {
-            this.postListeners.add(listener);
-        } else {
-            this.preListeners.add(listener);
-        }
+    public AbstractStateMachine<T, S, E, C> addListener(
+            AbstractStateMachineListener<T, S, E> listener) {
+        listeners.add(listener);
+        return this;
     }
 
     /**
      * 状态机监听
      * @param listeners
      */
-    public void addListeners(
+    public AbstractStateMachine<T, S, E, C> addListeners(
             Collection<AbstractStateMachineListener<T, S, E>> listeners) {
-        listeners.stream().forEach((listener) -> {
-            addListener(listener);
-        });
+        listeners.addAll(listeners);
+        return this;
     }
 
     /**
-     * 状态机事件监听列表
+     * 事件监听
      * @param listener
      */
-    public void addEventListener(
+    public AbstractStateMachine<T, S, E, C> addEventListener(
             AbstractStateMachineEventListener<T, S, E, C> listener) {
-        if (listener.isPost()) {
-            if (!this.postEventListeners.containsKey(listener.event())) {
-                this.postEventListeners
-                        .put(listener.event(), new ArrayList<>());
-            }
-            this.postEventListeners.get(listener.event()).add(listener);
-        } else {
-            if (!this.preEventListeners.containsKey(listener.event())) {
-                this.preEventListeners.put(listener.event(), new ArrayList<>());
-            }
-            this.preEventListeners.get(listener.event()).add(listener);
-        }
+        this.eventListeners.add(listener);
+        return this;
     }
 
     /**
-     * 状态机状态监听列表
+     * 事件监听
+     * @param listensers
+     * @return
+     */
+    public AbstractStateMachine<T, S, E, C> addEventListeners(
+            Collection<AbstractStateMachineEventListener<T, S, E, C>> listensers) {
+        this.eventListeners.addAll(listensers);
+        return this;
+    }
+
+    /**
+     * 状态监听
      * @param listener
      */
-    public void addStateListener(
+    public AbstractStateMachine<T, S, E, C> addStateListener(
             AbstractStateMachineStateListener<T, S, E> listener) {
-        if (listener.isEnter()) {
-            this.enterStateListeners.add(listener);
-        } else {
-            this.exitStateListeners.add(listener);
-        }
+        this.stateListeners.add(listener);
+        return this;
+    }
+
+    /**
+     * 状态监听
+     * @param listensers
+     * @return
+     */
+    public AbstractStateMachine<T, S, E, C> addStateListeners(
+            Collection<AbstractStateMachineStateListener<T, S, E>> listensers) {
+        this.stateListeners.addAll(listensers);
+        return this;
     }
 
     /**
@@ -195,59 +192,33 @@ public abstract class AbstractStateMachine<T, S extends StateContainer, E, C> {
     }
 
     /**
+     * 状态迁移监听
+     * @param listensers
+     * @return
+     */
+    public AbstractStateMachine<T, S, E, C> addTransformListeners(
+            Collection<AbstractStateMachineTransformListener<T, S, E>> listensers) {
+        this.transformListeners.addAll(listensers);
+        return this;
+    }
+
+    /**
      * 动作监听
      * @param action
      */
-    public void addAction(
+    public AbstractStateMachine<T, S, E, C> addAction(
             AbstractStateMachineActionListener<T, S, E, C> action) {
         this.actions.add(action);
+        return this;
     }
 
     /**
      * 动作监听
      * @param actions
      */
-    public void addActions(
+    public AbstractStateMachine<T, S, E, C> addActions(
             Collection<AbstractStateMachineActionListener<T, S, E, C>> actions) {
         this.actions.addAll(actions);
-    }
-
-    /**
-     * 批量设定事件监听
-     * @param listensers
-     * @return
-     */
-    public AbstractStateMachine<T, S, E, C> addEventListeners(
-            Collection<AbstractStateMachineEventListener<T, S, E, C>> listensers) {
-        listensers.stream().forEach((listener) -> {
-            addEventListener(listener);
-        });
-        return this;
-    }
-
-    /**
-     * 批量设定状态监听
-     * @param listensers
-     * @return
-     */
-    public AbstractStateMachine<T, S, E, C> addStateListeners(
-            Collection<AbstractStateMachineStateListener<T, S, E>> listensers) {
-        listensers.stream().forEach((listener) -> {
-            addStateListener(listener);
-        });
-        return this;
-    }
-
-    /**
-     * 批量设定状态后监听
-     * @param listensers
-     * @return
-     */
-    public AbstractStateMachine<T, S, E, C> addTransformListeners(
-            Collection<AbstractStateMachineTransformListener<T, S, E>> listensers) {
-        listensers.stream().forEach((listener) -> {
-            addTransformListener(listener);
-        });
         return this;
     }
 
@@ -256,10 +227,9 @@ public abstract class AbstractStateMachine<T, S extends StateContainer, E, C> {
      * 状态切换
      *
      * @param t
-     * @param state
-     *            现在状态
-     * @param event
-     * @param context 守卫判断的值
+     * @param state 现在状态
+     * @param event 事件
+     * @param context
      * @return 转换后状态
      */
     public <X extends RuntimeException> S sendEvent(final T t, final S state,
@@ -267,24 +237,25 @@ public abstract class AbstractStateMachine<T, S extends StateContainer, E, C> {
         LOGGER.debug("状态机{}开始调用,源状态:{},事件:{},上下文:{}", this.getClass(), state,
                 event, context);
         // 监听状态机（前）
-        this.preListeners.stream().forEach((listener) -> {
-            LOGGER.debug("监听状态机（前）:{}", listener.getClass());
-            listener.listener(t, state, event);
-        });
-        // 状态事件（离开）
-        this.exitStateListeners.stream()
-                .filter(listener -> listener.state().match(state))
-                .forEach(listener -> {
-                    LOGGER.debug("状态事件（离开）:{}", listener.getClass());
-                    listener.listener(t, event);
+        this.listeners.stream().filter(listener -> !listener.isPost())
+                .forEach((listener) -> {
+                    LOGGER.debug("监听状态机（前）:{}", listener.getClass());
+                    listener.listener(t, state, event);
                 });
+        // 状态事件（离开）
+        this.stateListeners.stream()
+                .filter(listener -> !listener.isEnter() && listener.state()
+                        .match(state)).forEach(listener -> {
+            LOGGER.debug("状态事件（离开）:{}", listener.getClass());
+            listener.listener(t, event);
+        });
         // 监听事件（前）
-        if (this.preEventListeners.containsKey(event)) {
-            this.preEventListeners.get(event).forEach(action -> {
-                LOGGER.debug("监听事件（前）:{}", action.getClass());
-                action.listener(t, state, null, context);
-            });
-        }
+        this.eventListeners.stream()
+                .filter(listener -> !listener.isPost() && Objects
+                        .equals(listener.event(), event)).forEach(action -> {
+            LOGGER.debug("监听事件（前）:{}", action.getClass());
+            action.listener(t, state, null, context);
+        });
         // 转换
         List<S> stats = this.states.stream()
                 .filter(container -> container.match(t, state, event, context))
@@ -302,30 +273,31 @@ public abstract class AbstractStateMachine<T, S extends StateContainer, E, C> {
             LOGGER.debug("状态迁移:{}", listener.getClass());
             listener.listener(t, event);
         });
-        // 监听事件（后）
-        if (this.postEventListeners.containsKey(event)) {
-            this.postEventListeners.get(event).forEach(action -> {
-                LOGGER.debug("监听事件（后）:{}", action.getClass());
-                action.listener(t, state, s, context);
-            });
-        }
-        // 状态事件（进入）
-        this.enterStateListeners.stream()
-                .filter(listener -> listener.state().match(s))
-                .forEach(listener -> {
-                    LOGGER.debug("状态事件（进入）:{}", listener.getClass());
-                    listener.listener(t, event);
-                });
         // 动作监听
         this.actions.stream().forEach((action) -> {
             LOGGER.debug("动作监听:{}", action.getClass());
             action.listener(t, state, event, s, context);
         });
-        // 监听状态机（后）
-        this.postListeners.stream().forEach((listener) -> {
-            LOGGER.debug("监听状态机（后）:{}", listener.getClass());
-            listener.listener(t, s, event);
+        // 监听事件（后）
+        this.eventListeners.stream()
+                .filter(listener -> listener.isPost() && Objects
+                        .equals(listener.event(), event)).forEach(action -> {
+            LOGGER.debug("监听事件（后）:{}", action.getClass());
+            action.listener(t, state, s, context);
         });
+        // 状态事件（进入）
+        this.stateListeners.stream()
+                .filter(listener -> listener.isEnter() && listener.state()
+                        .match(s)).forEach(listener -> {
+            LOGGER.debug("状态事件（进入）:{}", listener.getClass());
+            listener.listener(t, event);
+        });
+        // 监听状态机（后）
+        this.listeners.stream().filter(listener -> listener.isPost())
+                .forEach((listener) -> {
+                    LOGGER.debug("监听状态机（后）:{}", listener.getClass());
+                    listener.listener(t, s, event);
+                });
         LOGGER.debug("状态机{}调用结束", this.getClass());
         return s;
     }

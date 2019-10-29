@@ -258,14 +258,14 @@ public class StateMachineTest {
                         null);
         verify(exitStateListener).listener(data, Event.E1);
         verify(transformListener).listener(data, Event.E1);
-        verify(enterStateListener).listener(data, Event.E1);
-        verify(postEventListener)
-                .listener(data, new StateMachine.StateSingle<>(State.S1),
-                        new StateMachine.StateSingle<>(State.S2), null);
         verify(actionListener)
                 .listener(data, new StateMachine.StateSingle<>(State.S1),
                         Event.E1, new StateMachine.StateSingle<>(State.S2),
                         null);
+        verify(enterStateListener).listener(data, Event.E1);
+        verify(postEventListener)
+                .listener(data, new StateMachine.StateSingle<>(State.S1),
+                        new StateMachine.StateSingle<>(State.S2), null);
         verify(postListener)
                 .listener(data, new StateMachine.StateSingle<>(State.S2),
                         Event.E1);

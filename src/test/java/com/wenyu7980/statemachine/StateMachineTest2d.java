@@ -273,13 +273,13 @@ public class StateMachineTest2d {
         verify(exitStateListener2).listener(Data2, Event.E1);
         verify(transformListener).listener(Data2, Event.E1);
         verify(transformListener2).listener(Data2, Event.E1);
+        verify(actionListener).listener(Data2,
+                new StateMachine2d.StatePair<>(State.S1, State2.S2), Event.E1,
+                new StateMachine2d.StatePair<>(State.S2, State2.S2), null);
         verify(enterStateListener).listener(Data2, Event.E1);
         verify(enterStateListener2).listener(Data2, Event.E1);
         verify(postEventListener).listener(Data2,
                 new StateMachine2d.StatePair<>(State.S1, State2.S2),
-                new StateMachine2d.StatePair<>(State.S2, State2.S2), null);
-        verify(actionListener).listener(Data2,
-                new StateMachine2d.StatePair<>(State.S1, State2.S2), Event.E1,
                 new StateMachine2d.StatePair<>(State.S2, State2.S2), null);
         verify(postListener).listener(Data2,
                 new StateMachine2d.StatePair<>(State.S2, State2.S2), Event.E1);
